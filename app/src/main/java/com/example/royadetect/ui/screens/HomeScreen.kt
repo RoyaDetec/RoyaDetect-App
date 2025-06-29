@@ -580,12 +580,12 @@ suspend fun processImageAndAnalyzeDebug(context: Context, imageUri: Uri): Pair<A
 
             // Verificar si el archivo modelo existe
             try {
-                val modelFileExists = context.assets.list("")?.contains("modelo.tflite") ?: false
+                val modelFileExists = context.assets.list("")?.contains("model.tflite") ?: false
              //   debugMessages.add("2. Modelo existe: $modelFileExists")
-                Log.d("RoyaDetect", "Modelo modelo.tflite existe: $modelFileExists")
+                Log.d("RoyaDetect", "Modelo model.tflite existe: $modelFileExists")
 
                 if (!modelFileExists) {
-                    throw Exception("El archivo modelo.tflite no se encuentra en assets")
+                    throw Exception("El archivo model.tflite no se encuentra en assets")
                 }
             } catch (e: Exception) {
                // debugMessages.add("2. Error verificando modelo: ${e.message}")
@@ -656,7 +656,7 @@ private fun runModelDebug(context: Context, inputBuffer: ByteBuffer): FloatArray
     try {
         Log.d("RoyaDetect", "Cargando modelo TensorFlow Lite...")
 
-        val modelFileDescriptor = context.assets.openFd("modelo.tflite")
+        val modelFileDescriptor = context.assets.openFd("model.tflite")
         val inputStream = FileInputStream(modelFileDescriptor.fileDescriptor)
         val fileChannel = inputStream.channel
         val startOffset = modelFileDescriptor.startOffset
@@ -735,7 +735,7 @@ private fun debugModelInfo(context: Context) {
     try {
         Log.d("RoyaDetect", "=== DIAGNÓSTICO DEL MODELO ===")
 
-        val modelFileDescriptor = context.assets.openFd("modelo.tflite")
+        val modelFileDescriptor = context.assets.openFd("model.tflite")
         val inputStream = FileInputStream(modelFileDescriptor.fileDescriptor)
         val fileChannel = inputStream.channel
         val startOffset = modelFileDescriptor.startOffset

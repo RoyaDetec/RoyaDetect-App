@@ -87,20 +87,22 @@ fun generatePdfReport(context: Context, bitmap: Bitmap?, result: AnalysisResult)
     yPosition += 20f
     canvas.drawText("Descripción: ${getSeverityDescription(result.severityLevel)}", 50f, yPosition, textPaint)
     yPosition += 20f
-    canvas.drawText("Confianza: ${String.format(Locale.getDefault(), "%.1f", result.confidence * 100)}%", 50f, yPosition, textPaint)
+    canvas.drawText("Confianza: ${String.format(Locale.getDefault(), "%.1f", result.confidence  * 100)}%", 50f, yPosition, textPaint)
     yPosition += 30f
 
     // Recommendation
     canvas.drawText("Recomendación", 50f, yPosition, titlePaint)
     yPosition += 20f
+
     val recommendation = when (result.severityLevel) {
-        0 -> "Continúe monitoreando las hojas regularmente."
-        1 -> "Aplique fungicidas preventivos y realice un monitoreo frecuente."
-        2 -> "Implemente un tratamiento con fungicidas específicos y remueva hojas afectadas."
-        3 -> "Aplique tratamientos intensivos y considere consultar a un experto."
-        4 -> "Tratamiento urgente requerido, remueva plantas severamente afectadas."
-        else -> "Consulte a un experto para un diagnóstico detallado."
+        0 -> "Mantenga un programa de monitoreo quincenal. No se requiere intervención química por el momento."
+        1 -> "Inicie aplicaciones preventivas de fungicidas sistémicos (ej. triazoles) de baja toxicidad. Fortalezca la nutrición del cultivo, especialmente con potasio y magnesio."
+        2 -> "Implemente un programa de manejo integrado: combine aplicaciones de fungicidas sistémicos y de contacto (ej. mancozeb), elimine hojas muy afectadas y ajuste la sombra del cafetal. Intensifique el monitoreo semanal."
+        3 -> "Aplique tratamientos secuenciales con fungicidas sistémicos de acción prolongada y mezcle con productos de contacto. Considere la resiembra con variedades resistentes. Podas sanitarias recomendadas."
+        4 -> "Ejecute un plan de emergencia: tratamientos fungicidas intensivos (rotación de principios activos para evitar resistencia), eliminación de plantas severamente afectadas, control de sombra, renovación del lote si hay alta defoliación. Consultar con un fitopatólogo o extensionista agrícola."
+        else -> "Consulte a un especialista para un diagnóstico preciso y un plan de manejo adaptado a las condiciones de su finca."
     }
+
 
     // Dividir texto largo en múltiples líneas
     val words = recommendation.split(" ")
