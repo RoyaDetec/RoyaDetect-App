@@ -1,3 +1,4 @@
+// data/entity/Report.kt
 package com.example.royadetect.data.entity
 
 import androidx.room.Entity
@@ -11,5 +12,7 @@ data class Report(
     val severityLevel: Int,
     val confidence: Float,
     val pdfPath: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val fileName: String = "", // Nombre del archivo para referencia
+    val fileSize: Long = 0L // Tamaño del archivo en bytes
 )

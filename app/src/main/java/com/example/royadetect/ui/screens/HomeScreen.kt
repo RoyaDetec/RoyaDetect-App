@@ -1,5 +1,5 @@
+//ui/screens/HomeScreen.kt
 package com.example.royadetect.ui.screens
-
 import android.content.Context
 import android.content.Intent
 import android.graphics.*
@@ -46,6 +46,7 @@ import kotlin.math.min
 import com.example.royadetect.data.database.AppDatabase
 import com.example.royadetect.data.entity.Report
 import com.example.royadetect.data.repository.ReportRepository
+import com.example.royadetect.utils.PdfManager
 
 
 @Composable
@@ -274,10 +275,12 @@ fun HomeScreen() {
                     scope.launch {
                         try {
                             Log.d("RoyaDetect", "Iniciando generación de PDF...")
+
+                            // Generar PDF en la carpeta específica
                             val pdfFile = generatePdfReport(context, originalBitmap, result)
                             Log.d("RoyaDetect", "PDF generado en: ${pdfFile.absolutePath}")
 
-                            // Guardar en base de datos
+                            // Guardar en base de datos con la ruta completa
                             val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                             val currentDate = dateFormat.format(Date())
 
@@ -285,13 +288,22 @@ fun HomeScreen() {
                                 date = currentDate,
                                 severityLevel = result.severityLevel,
                                 confidence = result.confidence,
-                                pdfPath = pdfFile.absolutePath
+                                pdfPath = pdfFile.absolutePath // Ruta completa del archivo
                             )
 
                             repository.insertReport(report)
                             Log.d("RoyaDetect", "Reporte guardado en base de datos")
 
-                            // Abrir PDF como antes
+                            // Mostrar información del directorio
+                            val reportsDir = PdfManager.getReportsDirectory(context)
+                            val totalReports = PdfManager.getAllReportFiles(context).size
+                            val dirSize = PdfManager.getReportsDirectorySize(context)
+
+                            Log.d("RoyaDetect", "Directorio: ${reportsDir.absolutePath}")
+                            Log.d("RoyaDetect", "Total reportes: $totalReports")
+                            Log.d("RoyaDetect", "Tamaño directorio: ${String.format("%.2f", dirSize)} MB")
+
+                            // Intentar abrir el PDF
                             val pdfUri = FileProvider.getUriForFile(
                                 context,
                                 "${context.packageName}.fileprovider",
@@ -308,15 +320,19 @@ fun HomeScreen() {
                                 context.startActivity(intent)
                                 Log.d("RoyaDetect", "Intent para abrir PDF iniciado")
                             } catch (e: Exception) {
+                                // Fallback: compartir el archivo
                                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                     type = "application/pdf"
                                     putExtra(Intent.EXTRA_STREAM, pdfUri)
+                                    putExtra(Intent.EXTRA_TEXT, "Reporte de análisis de roya generado por RoyaDetect")
                                     flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                                 }
                                 try {
-                                    context.startActivity(Intent.createChooser(shareIntent, "Abrir PDF con..."))
+                                    context.startActivity(Intent.createChooser(shareIntent, "Compartir reporte"))
                                 } catch (e2: Exception) {
-                                    errorMessage = "PDF generado y guardado en: ${pdfFile.absolutePath}\nNo se encontró app para abrirlo"
+                                    // Último recurso: mostrar mensaje de éxito
+                                    errorMessage = "PDF generado exitosamente en:\n${pdfFile.absolutePath}\n\nTotal de reportes: $totalReports"
+                                    Log.i("RoyaDetect", "PDF generado pero no se pudo abrir automáticamente")
                                 }
                             }
                         } catch (e: Exception) {
@@ -524,7 +540,7 @@ private fun resizeImageWithPadding(originalBitmap: Bitmap, targetSize: Int = 224
     val offsetX = (targetSize - scaledWidth) / 2f
     val offsetY = (targetSize - scaledHeight) / 2f
 
-    // Dibujar la imagen centrada
+
     canvas.drawBitmap(scaledBitmap, offsetX, offsetY, null)
 
     Log.d("RoyaDetect", "Imagen final con padding: ${finalBitmap.width}x${finalBitmap.height}")
@@ -532,7 +548,7 @@ private fun resizeImageWithPadding(originalBitmap: Bitmap, targetSize: Int = 224
     return finalBitmap
 }
 
-// Función corregida para convertir a ByteBuffer (uint8)
+
 private fun bitmapToByteBufferUint8(bitmap: Bitmap): ByteBuffer {
     Log.d("RoyaDetect", "Convirtiendo bitmap ${bitmap.width}x${bitmap.height} a ByteBuffer uint8")
 
@@ -572,7 +588,7 @@ suspend fun processImageAndAnalyzeDebug(context: Context, imageUri: Uri): Pair<A
         val debugMessages = mutableListOf<String>()
 
         try {
-          //  debugMessages.add("1. Iniciando carga de imagen...")
+            //  debugMessages.add("1. Iniciando carga de imagen...")
             Log.d("RoyaDetect", "Paso 1: Cargando imagen desde URI: $imageUri")
 
             // Información del modelo primero
@@ -581,21 +597,21 @@ suspend fun processImageAndAnalyzeDebug(context: Context, imageUri: Uri): Pair<A
             // Verificar si el archivo modelo existe
             try {
                 val modelFileExists = context.assets.list("")?.contains("model.tflite") ?: false
-             //   debugMessages.add("2. Modelo existe: $modelFileExists")
+                //   debugMessages.add("2. Modelo existe: $modelFileExists")
                 Log.d("RoyaDetect", "Modelo model.tflite existe: $modelFileExists")
 
                 if (!modelFileExists) {
                     throw Exception("El archivo model.tflite no se encuentra en assets")
                 }
             } catch (e: Exception) {
-               // debugMessages.add("2. Error verificando modelo: ${e.message}")
+                // debugMessages.add("2. Error verificando modelo: ${e.message}")
                 throw Exception("Error accediendo a assets: ${e.message}")
             }
 
             // Cargar imagen
             val inputStream = context.contentResolver.openInputStream(imageUri)
             if (inputStream == null) {
-              //  debugMessages.add("3. Error: No se pudo abrir la imagen")
+                //  debugMessages.add("3. Error: No se pudo abrir la imagen")
                 throw Exception("No se pudo abrir la imagen")
             }
 
@@ -603,34 +619,34 @@ suspend fun processImageAndAnalyzeDebug(context: Context, imageUri: Uri): Pair<A
             inputStream.close()
 
             if (originalBitmap == null) {
-               // debugMessages.add("3. Error: No se pudo decodificar la imagen")
+                // debugMessages.add("3. Error: No se pudo decodificar la imagen")
                 throw Exception("No se pudo decodificar la imagen")
             }
 
-           // debugMessages.add("3. Imagen cargada: ${originalBitmap.width}x${originalBitmap.height}")
+            // debugMessages.add("3. Imagen cargada: ${originalBitmap.width}x${originalBitmap.height}")
             Log.d("RoyaDetect", "Imagen original: ${originalBitmap.width}x${originalBitmap.height}")
 
             // Redimensionar con padding (mantener aspect ratio)
-           // debugMessages.add("4. Redimensionando con padding a 224x224...")
+            // debugMessages.add("4. Redimensionando con padding a 224x224...")
             val processedBitmap = resizeImageWithPadding(originalBitmap, 224)
             Log.d("RoyaDetect", "Imagen procesada: ${processedBitmap.width}x${processedBitmap.height}")
 
             // Convertir a ByteBuffer uint8
-          //  debugMessages.add("5. Convirtiendo a ByteBuffer uint8...")
+            //  debugMessages.add("5. Convirtiendo a ByteBuffer uint8...")
             val inputBuffer = bitmapToByteBufferUint8(processedBitmap)
-          //  debugMessages.add("6. Buffer creado: ${inputBuffer.capacity()} bytes")
+            //  debugMessages.add("6. Buffer creado: ${inputBuffer.capacity()} bytes")
             Log.d("RoyaDetect", "Buffer size: ${inputBuffer.capacity()} bytes")
 
             // Ejecutar modelo
-           // debugMessages.add("7. Ejecutando modelo TensorFlow...")
+            // debugMessages.add("7. Ejecutando modelo TensorFlow...")
             val predictions = runModelDebug(context, inputBuffer)
-          //  debugMessages.add("8. Predicciones obtenidas: ${predictions.size} clases")
+            //  debugMessages.add("8. Predicciones obtenidas: ${predictions.size} clases")
             Log.d("RoyaDetect", "Predicciones: ${predictions.contentToString()}")
 
             // Procesar resultado
             val maxIndex = predictions.indices.maxByOrNull { predictions[it] } ?: 0
             val confidence = predictions[maxIndex]
-          ///  debugMessages.add("9. Resultado: Clase $maxIndex, Confianza ${String.format("%.3f", confidence)}")
+            ///  debugMessages.add("9. Resultado: Clase $maxIndex, Confianza ${String.format("%.3f", confidence)}")
 
             val result = AnalysisResult(
                 severityLevel = maxIndex,
@@ -642,7 +658,7 @@ suspend fun processImageAndAnalyzeDebug(context: Context, imageUri: Uri): Pair<A
             return@withContext Pair(result, debugMessages.joinToString("; "))
 
         } catch (e: Exception) {
-           // debugMessages.add("ERROR: ${e.message}")
+            // debugMessages.add("ERROR: ${e.message}")
             Log.e("RoyaDetect", "Error en procesamiento", e)
             throw Exception("${debugMessages.joinToString("; ")} - ${e.message}", e)
         }

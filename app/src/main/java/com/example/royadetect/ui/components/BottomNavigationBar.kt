@@ -1,5 +1,6 @@
 // ui/components/BottomNavigationBar.kt
 package com.example.royadetect.ui.components
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,7 +33,9 @@ import com.example.royadetect.ui.theme.RoyaGreen
 @Composable
 fun BottomNavigationBar(
     currentScreen: Screen,
-    onScreenSelected: (Screen) -> Unit
+    onScreenSelected: (Screen) -> Unit,
+    onCameraClick: () -> Unit, // Nueva función para cámara
+    onGalleryClick: () -> Unit // Nueva función para galería
 ) {
     BottomAppBar(
         containerColor = RoyaGreen,
@@ -47,14 +51,22 @@ fun BottomNavigationBar(
                 isSelected = currentScreen == Screen.HOME,
                 onClick = { onScreenSelected(Screen.HOME) }
             )
-
             BottomNavItem(
                 icon = Icons.Default.CameraAlt,
                 label = "Cámara",
                 isSelected = currentScreen == Screen.CAMERA,
-                onClick = { onScreenSelected(Screen.CAMERA) }
+                onClick = {
+                    onCameraClick() // Usar la función de cámara del HomeScreen
+                }
             )
-
+            BottomNavItem(
+                icon = Icons.Default.PhotoLibrary,
+                label = "Galería",
+                isSelected = false, // No tiene pantalla propia
+                onClick = {
+                    onGalleryClick() // Usar la función de galería del HomeScreen
+                }
+            )
             BottomNavItem(
                 icon = Icons.Default.Description,
                 label = "Reportes",

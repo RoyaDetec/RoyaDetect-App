@@ -10,7 +10,7 @@ import com.example.royadetect.data.entity.Report
 
 @Database(
     entities = [Report::class],
-    version = 1,
+    version = 2,  // ← Cambiado de 1 a 2
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,7 +26,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "royadetect_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()  // ← Agregado para manejar cambios de esquema
+                    .build()
                 INSTANCE = instance
                 instance
             }
