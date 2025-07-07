@@ -11,10 +11,13 @@ interface ApiService {
     suspend fun login(@Body loginRequest: LoginRequest): Response<ApiResponse<LoginData>>
 
     @POST("auth/register")
-    suspend fun register(@Body registerRequest: RegisterRequest): Response<ApiResponse<Any>>
+    suspend fun register(@Body registerRequest: RegisterRequest): Response<ApiResponse<LoginData>>
 
     @GET("auth/validate")
     suspend fun validateSession(@Query("user_id") userId: String): Response<ApiResponse<Any>>
+
+    @POST("batches")
+    suspend fun createBatch(@Body batchRequest: BatchRequest): Response<ApiResponse<BatchData>>
 }
 
 data class LoginRequest(
@@ -23,14 +26,18 @@ data class LoginRequest(
 )
 
 data class RegisterRequest(
-    val firstName: String,
-    val lastName: String,
+    val first_name: String,
+    val last_name: String,
     val age: Int,
     val phone: String,
     val email: String,
-    val password: String,
-    val cropName: String? = null,
-    val cropArea: Double? = null
+    val password: String
+)
+
+data class BatchRequest(
+    val farmer_id: String,
+    val name: String,
+    val description: String
 )
 
 data class ApiResponse<T>(
@@ -53,4 +60,12 @@ data class FarmerData(
     val last_name: String,
     val phone: String,
     val age: Int
+)
+
+data class BatchData(
+    val id: String,
+    val farmer_id: String,
+    val name: String,
+    val description: String,
+    val creation_date: String
 )

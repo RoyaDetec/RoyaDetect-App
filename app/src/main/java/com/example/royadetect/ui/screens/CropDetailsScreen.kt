@@ -29,9 +29,14 @@ fun CropDetailsScreen(
     var cropName by remember { mutableStateOf("") }
     var cropArea by remember { mutableStateOf("") }
 
-    LaunchedEffect(uiState.isCropSaved) {
-        if (uiState.isCropSaved) {
-            onNavigateToHome()
+    // Obtener el farmerId del usuario actual
+    val currentUser by viewModel.getCurrentUser().collectAsStateWithLifecycle(initialValue = null)
+    val farmerId = currentUser?.farmerId ?: ""
+
+    // Manejar navegación cuando se omite el formulario o se guarda el cultivo
+    LaunchedEffect(uiState.shouldNavigateToLogin) {
+        if (uiState.shouldNavigateToLogin) {
+            onNavigateToLogin()
         }
     }
 
@@ -57,7 +62,7 @@ fun CropDetailsScreen(
 
             // Título
             Text(
-                text = "Crea tu cuenta en\nRoyaDetect",
+                text = "Registra tu cultivo en\nRoyaDetect",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -104,7 +109,7 @@ fun CropDetailsScreen(
                     OutlinedTextField(
                         value = cropName,
                         onValueChange = { cropName = it },
-                        label = { Text("Nombre") },
+                        label = { Text("Nombre de cultivo") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         isError = uiState.cropNameError != null,
@@ -143,33 +148,22 @@ fun CropDetailsScreen(
                         )
                     }
 
-                    // Botón iniciar sesión
+                    // Botón guardar cultivo
                     Button(
                         onClick = {
-                            viewModel.saveCropDetails(
-                                cropName = cropName,
-                                cropArea = cropArea.toDoubleOrNull() ?: 0.0
-                            )
+                            viewModel.saveCropDetails()
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF8BC34A)
                         ),
-                        shape = RoundedCornerShape(8.dp),
-                        enabled = !uiState.isLoading
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Color.White
-                            )
-                        } else {
-                            Text(
-                                text = "Iniciar Sesión",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        Text(
+                            text = "Guardar Cultivo",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
 
                     // Link para iniciar sesión

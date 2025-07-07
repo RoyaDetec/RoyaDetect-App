@@ -1,6 +1,7 @@
 package com.example.royadetect.repository
 
 import com.example.royadetect.network.ApiService
+import com.example.royadetect.network.BatchRequest
 import com.example.royadetect.network.LoginRequest
 import com.example.royadetect.network.RegisterRequest
 import com.example.royadetect.utils.SessionManager
@@ -8,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import android.util.Log
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,10 +17,19 @@ import javax.inject.Singleton
 class AuthRepository @Inject constructor(
     private val sessionManager: SessionManager
 ) {
+
     private val apiService: ApiService by lazy {
+        val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
+            level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+        }
+
+        val client = okhttp3.OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+
         Retrofit.Builder()
-            //.baseUrl("https://your-api-base-url.com/api/") // Cambia por tu URL
             .baseUrl("https://royadetect-services-production.up.railway.app/api/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
@@ -50,6 +61,7 @@ class AuthRepository @Inject constructor(
                 emit(Result.failure(Exception(errorMessage)))
             }
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Login error", e)
             emit(Result.failure(e))
         }
     }
@@ -60,30 +72,47 @@ class AuthRepository @Inject constructor(
         age: Int,
         phone: String,
         email: String,
-        password: String,
-        //cropName: String? = null,
-        //cropArea: Double? = null
+        password: String
     ): Flow<Result<String>> = flow {
         try {
+            Log.d("AuthRepository", "Creating register request for: $email")
+
             val request = RegisterRequest(
-                firstName = firstName,
-                lastName = lastName,
+                first_name = firstName,
+                last_name = lastName,
                 age = age,
                 phone = phone,
                 email = email,
-                password = password,
-                //cropNamecropName = cropName,
-               // cropArea = cropArea
+                password = password
             )
+
+            Log.d("AuthRepository", "Sending register request: $request")
             val response = apiService.register(request)
+
+            Log.d("AuthRepository", "Register response received: ${response.code()}")
+            Log.d("AuthRepository", "Response body: ${response.body()}")
+            Log.d("AuthRepository", "Response headers: ${response.headers()}")
+
             if (response.isSuccessful && response.body()?.success == true) {
+                Log.d("AuthRepository", "Registration successful")
                 emit(Result.success("Registro exitoso"))
             } else {
-                val errorMessage = response.body()?.message ?: "Error en el registro"
+                // Intenta obtener el error del body, si no del errorBody
+                val errorMessage = if (response.body()?.message != null) {
+                    response.body()?.message!!
+                } else {
+                    // Si el body es null, trata de leer el errorBody
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("AuthRepository", "Error body: $errorBody")
+                    errorBody ?: "Error en el registro (${response.code()})"
+                }
+
+                Log.e("AuthRepository", "Registration failed: $errorMessage")
                 emit(Result.failure(Exception(errorMessage)))
             }
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            Log.e("AuthRepository", "Exception during registration", e)
+            emit(Result.failure(Exception("Error en el registro: ${e.message}")))
         }
     }
 
@@ -102,8 +131,50 @@ class AuthRepository @Inject constructor(
                 emit(Result.success(false))
             }
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Session validation error", e)
             sessionManager.clearSession()
             emit(Result.success(false))
+        }
+    }
+
+    suspend fun createBatch(
+        farmerId: String,
+        name: String,
+        description: String
+    ): Flow<Result<String>> = flow {
+        try {
+            Log.d("AuthRepository", "Creating batch for farmer: $farmerId")
+
+            val request = BatchRequest(
+                farmer_id = farmerId,
+                name = name,
+                description = description
+            )
+
+            Log.d("AuthRepository", "Sending batch request: $request")
+            val response = apiService.createBatch(request)
+
+            Log.d("AuthRepository", "Batch response received: ${response.code()}")
+            Log.d("AuthRepository", "Response body: ${response.body()}")
+
+            if (response.isSuccessful && response.body()?.success == true) {
+                Log.d("AuthRepository", "Batch created successfully")
+                emit(Result.success("Batch creado exitosamente"))
+            } else {
+                val errorMessage = if (response.body()?.message != null) {
+                    response.body()?.message!!
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("AuthRepository", "Error body: $errorBody")
+                    errorBody ?: "Error al crear el batch (${response.code()})"
+                }
+
+                Log.e("AuthRepository", "Batch creation failed: $errorMessage")
+                emit(Result.failure(Exception(errorMessage)))
+            }
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Exception during batch creation", e)
+            emit(Result.failure(Exception("Error al crear el batch: ${e.message}")))
         }
     }
 

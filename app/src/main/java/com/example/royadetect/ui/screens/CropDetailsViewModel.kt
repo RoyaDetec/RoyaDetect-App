@@ -18,37 +18,18 @@ class CropDetailsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CropDetailsUiState())
     val uiState: StateFlow<CropDetailsUiState> = _uiState.asStateFlow()
 
-    fun saveCropDetails(cropName: String, cropArea: Double) {
-        if (!validateInput(cropName, cropArea)) {
-            return
-        }
+    fun getCurrentUser() = authRepository.getCurrentUser()
 
+    fun saveCropDetails() {
+        // Solo redirige al login sin hacer ninguna operación
         _uiState.value = _uiState.value.copy(
-            isLoading = true,
-            errorMessage = null
+            shouldNavigateToLogin = true
         )
-
-        viewModelScope.launch {
-            try {
-                // Aquí puedes agregar lógica para guardar los datos del cultivo
-                // Por ahora, simplemente marcamos como exitoso
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    isCropSaved = true,
-                    errorMessage = null
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message ?: "Error al guardar los datos del cultivo"
-                )
-            }
-        }
     }
 
     fun skipCropDetails() {
         _uiState.value = _uiState.value.copy(
-            isCropSaved = true
+            shouldNavigateToLogin = true
         )
     }
 
@@ -75,7 +56,7 @@ class CropDetailsViewModel @Inject constructor(
 
 data class CropDetailsUiState(
     val isLoading: Boolean = false,
-    val isCropSaved: Boolean = false,
+    val shouldNavigateToLogin: Boolean = false,
     val errorMessage: String? = null,
     val cropNameError: String? = null,
     val cropAreaError: String? = null

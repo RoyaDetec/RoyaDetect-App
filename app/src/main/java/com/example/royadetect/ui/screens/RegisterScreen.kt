@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,9 +38,17 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
+    // Debug: Log del estado actual
+    LaunchedEffect(uiState) {
+        Log.d("RegisterScreen", "UI State changed: isLoading=${uiState.isLoading}, isSuccess=${uiState.isRegistrationSuccess}, error=${uiState.errorMessage}")
+    }
+
     LaunchedEffect(uiState.isRegistrationSuccess) {
         if (uiState.isRegistrationSuccess) {
+            Log.d("RegisterScreen", "Registration successful, navigating to crop details")
             onNavigateToCropDetails()
+            // Limpiar el estado de éxito después de navegar
+            viewModel.clearRegistrationSuccess()
         }
     }
 
@@ -194,10 +203,16 @@ fun RegisterScreen(
                     // Botón crear cuenta
                     Button(
                         onClick = {
+                            Log.d("RegisterScreen", "Register button clicked")
+                            Log.d("RegisterScreen", "Data: firstName=$firstName, lastName=$lastName, age=$age, phone=$phone, email=$email, password=$password, confirmPassword=$confirmPassword")
+
+                            val ageInt = age.toIntOrNull() ?: 0
+                            Log.d("RegisterScreen", "Parsed age: $ageInt")
+
                             viewModel.register(
                                 firstName = firstName,
                                 lastName = lastName,
-                                age = age.toIntOrNull() ?: 0,
+                                age = ageInt,
                                 phone = phone,
                                 email = email,
                                 password = password,

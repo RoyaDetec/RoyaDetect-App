@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import android.util.Log
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,9 +28,14 @@ class RegisterViewModel @Inject constructor(
         password: String,
         confirmPassword: String
     ) {
+        Log.d("RegisterViewModel", "register() called with: firstName=$firstName, lastName=$lastName, age=$age, phone=$phone, email=$email")
+
         if (!validateInput(firstName, lastName, age, phone, email, password, confirmPassword)) {
+            Log.d("RegisterViewModel", "Validation failed")
             return
         }
+
+        Log.d("RegisterViewModel", "Validation passed, starting registration")
 
         _uiState.value = _uiState.value.copy(
             isLoading = true,
@@ -37,28 +43,40 @@ class RegisterViewModel @Inject constructor(
         )
 
         viewModelScope.launch {
-            authRepository.register(
-                firstName = firstName,
-                lastName = lastName,
-                age = age,
-                phone = phone,
-                email = email,
-                password = password
-            ).collect { result ->
-                result.fold(
-                    onSuccess = {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            isRegistrationSuccess = true,
-                            errorMessage = null
-                        )
-                    },
-                    onFailure = { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = error.message ?: "Error en el registro"
-                        )
-                    }
+            try {
+                Log.d("RegisterViewModel", "Calling authRepository.register")
+                authRepository.register(
+                    firstName = firstName,
+                    lastName = lastName,
+                    age = age,
+                    phone = phone,
+                    email = email,
+                    password = password
+                ).collect { result ->
+                    Log.d("RegisterViewModel", "Received result: $result")
+                    result.fold(
+                        onSuccess = { response ->
+                            Log.d("RegisterViewModel", "Registration successful: $response")
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                isRegistrationSuccess = true,
+                                errorMessage = null
+                            )
+                        },
+                        onFailure = { error ->
+                            Log.e("RegisterViewModel", "Registration failed", error)
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                errorMessage = error.message ?: "Error en el registro"
+                            )
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("RegisterViewModel", "Exception in registration", e)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Error inesperado: ${e.message}"
                 )
             }
         }
@@ -126,10 +144,20 @@ class RegisterViewModel @Inject constructor(
             confirmPasswordError = confirmPasswordError
         )
 
-        return listOf(
+        val isValid = listOf(
             firstNameError, lastNameError, ageError, phoneError,
             emailError, passwordError, confirmPasswordError
         ).all { it == null }
+
+        Log.d("RegisterViewModel", "Validation result: $isValid")
+        Log.d("RegisterViewModel", "Errors: firstName=$firstNameError, lastName=$lastNameError, age=$ageError, phone=$phoneError, email=$emailError, password=$passwordError, confirmPassword=$confirmPasswordError")
+
+        return isValid
+    }
+
+    // Función para limpiar el estado de éxito
+    fun clearRegistrationSuccess() {
+        _uiState.value = _uiState.value.copy(isRegistrationSuccess = false)
     }
 }
 
